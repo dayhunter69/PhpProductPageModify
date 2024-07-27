@@ -2,7 +2,7 @@
 /*
 Plugin Name: Custom Woo Modifications
 Description: Custom modifications for WooCommerce.
-Version: 1.1
+Version: 1.2
 Author: Anil Kunwar
 */
 
@@ -37,6 +37,7 @@ function handle_variation_stock_status() {
 
   if ($product->is_type('variable')) {
     echo '<div id="variation-out-of-stock-message" style="display:none;"><a href="/contact" class="button out-of-stock-button" style="background-color: red; color: white;">Out of Stock</a></div>';
+    echo '<div id="variation-not-selected-message" style="display:none;"><p style="color: red; font-size:1.3rem; font-weight: bold;">Please choose a variant to Checkout</p></div>';
   }
 }
 
@@ -46,20 +47,41 @@ function variation_stock_status_script() {
     ?>
     <script type="text/javascript">
       jQuery(document).ready(function($) {
-        $('form.variations_form').on('show_variation', function(event, variation) {
-          if (variation.is_in_stock) {
-            $('#variation-out-of-stock-message').hide();
-            $('.single_add_to_cart_button, .quick_buy_now_button').show();
+        var $form = $('form.variations_form');
+        var $addToCartButton = $('.single_add_to_cart_button');
+        var $quickBuyButton = $('.quick_buy_now_button');
+        var $outOfStockMessage = $('#variation-out-of-stock-message');
+        var $notSelectedMessage = $('#variation-not-selected-message');
+
+        function updateButtonsVisibility(variation) {
+          if (variation && variation.is_in_stock) {
+            $outOfStockMessage.hide();
+            $notSelectedMessage.hide();
+            $addToCartButton.show();
+            $quickBuyButton.show();
+          } else if (variation && !variation.is_in_stock) {
+            $outOfStockMessage.show();
+            $notSelectedMessage.hide();
+            $addToCartButton.hide();
+            $quickBuyButton.hide();
           } else {
-            $('#variation-out-of-stock-message').show();
-            $('.single_add_to_cart_button, .quick_buy_now_button').hide();
+            $outOfStockMessage.hide();
+            $notSelectedMessage.show();
+            $addToCartButton.hide();
+            $quickBuyButton.hide();
           }
+        }
+
+        $form.on('show_variation', function(event, variation) {
+          updateButtonsVisibility(variation);
         });
 
-        $('form.variations_form').on('hide_variation', function() {
-          $('#variation-out-of-stock-message').hide();
-          $('.single_add_to_cart_button, .quick_buy_now_button').hide();
+        $form.on('hide_variation', function() {
+          updateButtonsVisibility(null);
         });
+
+        // Initial check on page load
+        updateButtonsVisibility(null);
       });
     </script>
     <?php
@@ -86,4 +108,3 @@ function conditional_out_of_stock_button() {
     echo '<a href="/contact" class="button out-of-stock-button" style="background-color: red; color: white;">Out of Stock</a>';
   }
 }
-?>
